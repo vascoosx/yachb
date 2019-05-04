@@ -1,9 +1,12 @@
 <script>
 	import { writable, derived } from 'svelte/store'
+	import { onMount } from 'svelte'
 	import { fileName } from './Utils.js'
 	import { Board } from './Board.js'
 	import { Intent } from './Intent.js'
 	import { Judge } from './Judge.js'
+
+	let adj_y = 0
 
 	let judge = new Judge()
 	let intent = new Intent()
@@ -18,7 +21,7 @@
 	let out_of_board = derived(coords, $coords => ($coords.x < 100 || $coords.x > 500 || $coords.y < 100 || $coords.y > 500))
 
 	const handleMouseMove = (e) => {
-	    coords.set({ x: e.clientX, y: e.clientY })
+	    coords.set({ x: e.clientX, y: e.clientY - adj_y })
 	}
 
 	const handleMouseDown = () => {
@@ -39,6 +42,14 @@
 	    ready_to_update_board = true
 	}
 
+	onMount(() => {
+	    adj_y = document.getElementById('chess-table').getBoundingClientRect()['y']
+	    window.addEventListener('resize', readjustY)
+	})
+
+	const readjustY = () => {
+	    adj_y = document.getElementById('chess-table').getBoundingClientRect()['y']
+	}
 	
 	$: if (ready_to_update_board) {
 	    ready_to_update_board = false
@@ -94,9 +105,11 @@
 </style>
 
 {#if debug}
-<div style="position: absolute; width: 500px"  >
+<div style="width: 500px"  >
   <p>place is: {$place}, start is: {start_place}, finish is: {finish_place}, move type is: {move_type}, piece is {picked_piece}</p>
+  <p> adj_y is :{adj_y}</p>
 </div>
+
 {/if}
 <div style="height: 600px; width: 1000px;">
 	<div style="height: 600px; width: 600px; float: left">
@@ -104,6 +117,7 @@
 		on:mousemove="{handleMouseMove}"
 		on:mousedown="{handleMouseDown}"
 		on:mouseup="{handleMouseUp}"
+		id="chess-table"
 	>  
 		{#each board.rows as r}
 			{#each board.columns as c}
