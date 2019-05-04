@@ -1,209 +1,131 @@
 <script>
 	import { writable, derived } from 'svelte/store'
-	import { pieces } from './Board.js'
+	import { fileName } from './Utils.js'
+	import { Board } from './Board.js'
+	import { Intent } from './Intent.js'
+	import { Judge } from './Judge.js'
+
+	let judge = new Judge()
+	let intent = new Intent()
+	let board = new Board()
+	let board_data = board.pieces
+	let ready_to_update_board = false
+	let picked_file_name
+	let picked_piece
 
 	let coords = writable({ x: 50, y: 50 })
-	let size = 20
-	let place = derived(coords,
-						$coords => Math.floor(($coords.y - 100) / 50) * 8 + Math.floor(($coords.x - 100) / 50))
-
+	let place = derived(coords, $coords => Math.floor(($coords.y - 100) / 50) * 8 + Math.floor(($coords.x - 100) / 50))
 	let out_of_board = derived(coords, $coords => ($coords.x < 100 || $coords.x > 500 || $coords.y < 100 || $coords.y > 500))
-	let draw = writable({ s: -1, f: -1 })
-	let m_is_down = writable(false)
 
-	function castlingPossible(sp, fp) {
-		if (sp === 4 && fp === 6) {
-			return !$pieces.K_moved && !$pieces.KR_moved
-		} else if (sp === 4 && fp === 2) {
-			return !$pieces.K_moved && !$pieces.QR_moved	
-		} else if (sp === 60 && fp === 62) {
-			return !$pieces.k_moved && !$pieces.kr_moved
-		} else if (sp === 60 && fp === 58) {
-			return !$pieces.k_moved && !$pieces.qr_moved
-		} else {
-			return false
-		}
-	}
-	const move = derived([draw, out_of_board], ([$draw, $out_of_board])  => {
-		if ($out_of_board){
-			return { t: 'out of board' }
-		}
-		let dir = $draw.f > $draw.s ? 1 : -1
-		if ($draw.f == $draw.s) {
-			return { t: 'no move'}
-		} else if ($draw.s % 8 == $draw.f % 8) {
-			return { t: 'vertical rook', l: Math.floor(Math.abs($draw.s - $draw.f) / 8), d: dir, s: 8, c: 'rook' }
-		} else if (Math.floor($draw.s / 8) == Math.floor($draw.f / 8)) {
-			return { t: 'horizontal rook', l: Math.abs($draw.s - $draw.f), d: dir, s: 1, c: 'rook' }
-		} else if (Math.abs(Math.floor($draw.s / 8) - Math.floor($draw.f / 8)) === Math.abs($draw.s % 8 - $draw.f % 8)){
-			let step = Math.abs($draw.s - $draw.f)
-			return { t: 'bishop move', l: Math.floor(Math.abs($draw.s - $draw.f) / step), d: dir, s: step, c: 'bishop' }
-		} else if (Math.abs($draw.s - $draw.f) == 15 || Math.abs($draw.s - $draw.f) == 17) {
-			return { t: 'knight move'}
-		} else if (Math.abs($draw.s - $draw.f) == 10 || Math.abs($draw.s - $draw.f) == 6){
-			return { t: 'knight move'}
-		} else{
-			return { t: 'illegal move' }
-		}
-	})
-
-	let columns = [0, 1, 2, 3, 4, 5, 6, 7]
-	let rows = [0, 1, 2, 3, 4, 5, 6, 7]
-
-
-	function isWhite(p){
-		return p.charCodeAt(0) > 97 
+	const handleMouseMove = (e) => {
+	    coords.set({ x: e.clientX, y: e.clientY })
 	}
 
-	function isBlack(p){
-		return p.charCodeAt(0) < 90 
+	const handleMouseDown = () => {
+	    if ($out_of_board){
+	        return
+	    }
+	    intent.updateStart($place) 
+	    picked_file_name = fileName(board.pieces[intent.start])
+	    picked_piece = board.pieces[intent.start]
 	}
 
-	function sameColor(p1, p2){
-		return (isWhite(p1) && isWhite(p2)) || (isBlack(p1) && isBlack(p2))
+	const handleMouseUp = () => {
+	    if ($out_of_board || picked_piece === '-'){
+	        return
+	    }
+	    intent.updateEnd($place)
+	    intent.getGesture()
+	    ready_to_update_board = true
 	}
 
-	function PathClear(board, direction, step, length, start_position){
-		for (let i=1; i < length; i+=1){
-			if (board[start_position + (i * step * direction)] !== '-'){
-				return false
-			}
-		}
-		return true
-	}
-
-	function isInitialPawn(pawn, pos){
-		if (pawn === 'P'){
-			return pos >= 8 && pos <= 15
-		} else if (pawn === 'p') {
-			return pos >= 48 && pos <= 55
-		} else{
-			return false
-		}
-	}
-
-	function backwardMove(piece, direction){
-		if ((isBlack(piece) && direction > 0) || (isWhite(piece) && direction < 0)) {
-			return false
-		} else{
-			return true
-		}
-	}
-
-	function enpassable(piece){
-		return false
-	}
-
-	function isUpdatable() {
-		if ($move.t === 'no move' || $move.t === 'illegal move' || $move.t === 'out of board') return false
-
-		let sp = $pieces.board[$draw.s]
-		if (sp === '-') return false
-
-		let fp = $pieces.board[$draw.f]
-		if (sp === undefined || fp === undefined) return false
-
-		if (fp !== '-' && sameColor(sp, fp)) return false
-
-		if (sp === 'P' || sp === 'p'){
-			if (backwardMove(sp, $move.d)) return false
-			if (fp !== '-' && $move.c !== 'bishop') return false
-			if (fp === '-' && $move.c === 'bishop' && !enpassable(sp)) return false
-			if (fp === '-' && $move.t !== 'vertical rook') return false
-			if ($move.l === 2 && !isInitialPawn(sp, $draw.s)) return false
-			if ($move.l > 2) return false
-		}
-
-		if (sp === 'R' || sp === 'r') {
-			if ($move.c !== 'rook') return false
-		}
-
-		if (sp === 'B' || sp === 'b') {
-			if ($move.c !== 'bishop') return false
-
-		}
-
-		if (sp === 'Q' || sp === 'q') {
-			if ($move.t === 'knight move') return false
-		}
-
-		if (sp === 'K' || sp === 'k') {
-			if ($move.t === 'knight move') return false
-			if ($move.l > 2) return false
-			if ($move.l === 2 && !castlingPossible($draw.s, $draw.f)) return false
-			if ($move.l === 2 && castlingPossible($draw.s, $draw.f) && $move.t !== 'horizontal rook') return false
-		}
-		if (sp === 'N' || sp === 'n'){
-			return $move.t === 'knight move'
-		} else {
-			return PathClear($pieces.board, $move.d, $move.s, $move.l, $draw.s)
-		}
-	}
-
-	function updatePieces() {
-		if (isUpdatable()){
-		  pieces.swap($draw.s, $draw.f)
-		} 
-	}
 	
-	function getPieceName(p) {
-		let table = {
-			p: 'pawn',
-			r: 'rook',
-			b: 'bishop',
-			n: 'knight',
-			q: 'queen',
-			k: 'king'
-		}
-		return table[p.toLowerCase()]
-	}
-	function fileName(piece) {
-		if (piece == undefined){
-			return undefined
-		}
-		let color = isBlack(piece) ? 'b' : 'w'
-		let piece_name = getPieceName(piece)
-		return `${piece_name}_${color}.svg`
-	}
-	let picked_piece
-	let picked_loc
-	let picked_file_name
-	let picked_place
+	$: if (ready_to_update_board) {
+	    ready_to_update_board = false
 
-	$: picked_piece = ($m_is_down && !$out_of_board) ? $pieces.board[$draw.s] : undefined
-	$: picked_loc = $draw.s
-	$: picked_file_name = fileName($pieces.board[$draw.s])
-	$: picked_place = ($m_is_down && !$out_of_board) ? $place : undefined
+	    judge.pieces = board.pieces
 
+	    judge.castle.K_moved = board.K_moved
+	    judge.castle.k_moved = board.k_moved
+	    judge.castle.KR_moved = board.KR_moved
+	    judge.castle.QR_moved = board.QR_moved
+	    judge.castle.kr_moved = board.kr_moved
+	    judge.castle.qr_moved = board.qr_moved
+
+	    judge.piece.start = board.pieces[intent.start]
+	    judge.piece.end = board.pieces[intent.end]
+	    judge.piece.start_id = intent.start
+	    judge.piece.end_id = intent.end
+
+	    judge.move.length = intent.gesture.l
+	    judge.move.direction = intent.gesture.d
+	    judge.move.step = intent.gesture.s
+	    judge.move.kind = intent.gesture.c
+	    judge.move.type = intent.gesture.t
+
+	    judge.enpassant.square = board.enpassant_square
+
+	    judge.checkMove()
+	}
+
+	$: if (judge.ok){
+	    judge.ok = false
+	    board.swap(intent.start, intent.end)
+	    board_data = board.pieces
+	    picked_piece = undefined
+	} else {
+	    picked_piece = undefined
+	}
+
+	let debug = true
+	let circle_size = 20
+	let start_place
+	let finish_place
+	let move_type
+	$: {
+	    start_place = judge.piece.start_id
+	    finish_place = judge.piece.end_id
+	    move_type = judge.move.type
+	}
 </script>
 
 <style>
 	svg { width: 100%; height: 100%; }
 </style>
 
-<div style="position: absolute;" >
-  <p>place is: {$place}, start is: {$draw.s}, finish is: {$draw.f}, move type is: {$move.t}, piece is {picked_piece}</p>
+{#if debug}
+<div style="position: absolute; width: 500px"  >
+  <p>place is: {$place}, start is: {start_place}, finish is: {finish_place}, move type is: {move_type}, piece is {picked_piece}</p>
 </div>
-
-
-<svg
-	on:mousemove="{e => coords.set({ x: e.clientX, y: e.clientY })}"
-	on:mousedown="{() => { $draw.s = $place; $m_is_down = true }}"
-	on:mouseup="{() => { $draw.f = $place; updatePieces(); $m_is_down = false }}"
->  
-	{#each rows as r}
-		{#each columns as c}
-		<rect x={80 + r * 50} y={80 + c * 50} width=50 height=50 fill={((r +c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+{/if}
+<div style="height: 600px; width: 1000px;">
+	<div style="height: 600px; width: 600px; float: left">
+	<svg
+		on:mousemove="{handleMouseMove}"
+		on:mousedown="{handleMouseDown}"
+		on:mouseup="{handleMouseUp}"
+	>  
+		{#each board.rows as r}
+			{#each board.columns as c}
+			<rect x={80 + r * 50} y={80 + c * 50} width=50 height=50 fill={((r +c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+			{/each}
 		{/each}
-	{/each}
 
-	{#each $pieces.board as piece, i}
-		{#if piece !== '-' && (i !== picked_loc || picked_piece === undefined)}
-		<image xlink:href={fileName(piece)} height="40" width="40" x={85 + (i % 8) * 50} y={85 + Math.floor(i / 8) * 50} />
+		{#each board_data as piece, i}
+			{#if piece !== '-' && (i !== intent.start || picked_piece === undefined)}
+			<image xlink:href={fileName(piece)} height="40" width="40" x={85 + (i % 8) * 50} y={85 + Math.floor(i / 8) * 50} />
+			{/if}
+		{/each}
+
+		{#if picked_piece !== undefined && picked_piece !== '-'}
+		<image xlink:href={picked_file_name} height="40" width="40" x={$coords.x - 20} y={$coords.y - 20} />	
 		{/if}
-	{/each}
-	{#if picked_piece !== undefined && picked_piece !== '-'}
-	<image xlink:href={picked_file_name} height="40" width="40" x={$coords.x - 20} y={$coords.y - 20} />	
-	{/if}
-	<circle cx={$coords.x} cy={$coords.y} r={size} fill={$out_of_board ? '#ff3e00' : '#003cff'} fill-opacity="0.3"/>
-</svg>
+		{#if debug}
+		<circle cx={$coords.x} cy={$coords.y} r={circle_size} fill={$out_of_board ? '#ff3e00' : '#003cff'} fill-opacity="0.3"/>
+		{/if}
+	</svg>
+	</div>
+	<div style="float: left">
+		<input type="checkbox" bind:checked={debug} /> debug <br>
+	</div>
+</div>
