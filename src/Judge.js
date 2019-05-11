@@ -1,4 +1,4 @@
-import { getPieceName, isBlack, isWhite, sameColor } from './Utils.js'
+import {getPieceName, isBlack, isWhite, sameColor} from './Utils.js'
 
 class Judge {
     constructor() {
@@ -36,6 +36,10 @@ class Judge {
 
     checkMove() {
         let n = this
+        if (this.move.type === 'illegal move' || this.piece.end_id > 63) {
+            n.ok = false
+            return
+        }
         if (n.piece.end !== '-' && sameColor(n.piece.start, n.piece.end)) {
             n.ok = false
             return

@@ -17,7 +17,7 @@ class Intent {
         } else if (Math.floor(m.start / 8) == Math.floor(m.end / 8)) {
             m.gesture = { t: 'horizontal rook', l: Math.abs(m.start - m.end), d: dir, s: 1, c: 'rook' }
         } else if (Math.abs(Math.floor(m.start / 8) - Math.floor(m.end / 8)) === Math.abs(m.start % 8 - m.end % 8)){
-            let step = Math.abs(m.start - m.end)
+            let step = Math.abs(m.start - m.end) % 9 === 0 ? 9 : 7
             m.gesture = { t: 'bishop move', l: Math.floor(Math.abs(m.start - m.end) / step), d: dir, s: step, c: 'bishop' }
         } else if (Math.abs(m.start - m.end) == 15 || Math.abs(m.start - m.end) == 17) {
             m.gesture = { t: 'knight move'}

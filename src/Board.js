@@ -1,4 +1,4 @@
-import { isBlack, getPieceName } from './Utils.js'
+import {isBlack, getPieceName} from './Utils.js'
 
 class Board{
     constructor() {
