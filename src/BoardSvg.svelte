@@ -1,5 +1,8 @@
 <script>
     import {getImg} from './Piece.svelte'
+    import {createEventDispatcher} from 'svelte'
+
+    const dispatch = createEventDispatcher()
 
     let svg
     let image
@@ -14,6 +17,15 @@
     const checkImage = () => {
         image = getImg()
     }
+
+    const resetPointerEvents = (e) => {
+        checkImage()
+        if (image) {
+            image.setAttributeNS(null, 'pointer-events', 'all')
+            image = undefined
+            dispatch('drop', e)
+        }
+    }
 </script>
 <style>
     svg {
@@ -26,7 +38,7 @@
     bind:this={svg}
     on:mousemove={move}
     on:mousedown={checkImage}
-    on:mouseup={checkImage}
+    on:mouseup={resetPointerEvents}
 >
     <slot></slot>
 </svg>

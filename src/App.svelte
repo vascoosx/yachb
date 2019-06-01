@@ -1,5 +1,5 @@
 <script>
-    import Piece, {goBack} from './Piece.svelte'
+    import Piece, {goBack, dropPiece} from './Piece.svelte'
     import BoardSvg from './BoardSvg.svelte'
     import {Board} from './Board.js'
     import {Intent} from './Intent.js'
@@ -10,26 +10,16 @@
     let intent = new Intent()
     let board = new Board()
     let board_data = board.pieces
-    let ini_x
-    let ini_y
-    let ini_id
     let ready_to_update_board = false
 
     const picked = (e) => {
-        let image = e.explicitOriginalTarget
-        ini_id = parseInt(image.id)
-        ini_x = image.getAttributeNS(null, 'x')
-        ini_y = image.getAttributeNS(null, 'y')
-        intent.updateStart(ini_id)
+        intent.updateStart(parseInt(e.explicitOriginalTarget.id))
     }
 
     const dropped = (e) => {
-        let image = e.explicitOriginalTarget
-        let x = image.getAttributeNS(null, 'x')
-        let y = image.getAttributeNS(null, 'y')
-        let final_id = ini_id + (parseInt((y - ini_y) / 40) * 8) + parseInt((x - ini_x) / 40)
-        intent.updateEnd(final_id)
+        intent.updateEnd(e.explicitOriginalTarget.id)
         intent.getGesture()
+        dropPiece()
         ready_to_update_board = true
     }
 
@@ -88,15 +78,15 @@
 </script>
 
 <h1>Let's play</h1>
-<BoardSvg>
+<BoardSvg on:drop={dropped}>
 {#each board.rows as r}
     {#each board.columns as c}
-    <rect x={80 + r * 50} y={80 + c * 50} width=50 height=50 fill={((r +c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+    <rect id={c + r * 8} y={80 + r * 50} x={80 + c * 50} width=50 height=50 fill={((r + c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
     {/each}
 {/each}
 {#each board_data as piece, i}
     {#if piece !== '-'}
-    <Piece pid={i} url={fileName(piece)} height="40" width="40" x={85 + (i % 8) * 50} y={85 + Math.floor(i / 8) * 50} on:pick={picked} on:drop={dropped}/>
+    <Piece pid={i} url={fileName(piece)} height="40" width="40" x={85 + (i % 8) * 50} y={85 + Math.floor(i / 8) * 50} on:pick={picked}/>
     {/if}
 {/each}
 </BoardSvg>

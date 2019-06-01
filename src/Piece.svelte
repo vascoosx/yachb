@@ -10,6 +10,10 @@
             last.setAttributeNS(null, 'y', last_y)
         }
     }
+    export const dropPiece = () => {
+        last = current
+        current = undefined
+    }
 </script>
 
 <script>
@@ -24,15 +28,8 @@
         dispatch('pick', e)
     }
 
-    const drop = (e) => {
-        x = image.getAttributeNS(null, 'x')
-        y = image.getAttributeNS(null, 'y')
-        last = image
-        current = undefined
-        dispatch('drop', e)
-    }
-
     const stopDrag = (e) => {
+        e.target.setAttributeNS(null, 'pointer-events', 'none')
         e.preventDefault()
         image.ondrag = null
     }
@@ -44,4 +41,4 @@
     export let y
 </script>
 <image id={pid} bind:this={image} xlink:href={url} height=40 width=40 
-x={x} y={y} on:mousedown={pick} on:mouseup={drop} on:dragstart={stopDrag}/>
+x={x} y={y} on:mousedown={pick} on:dragstart={stopDrag}/>
