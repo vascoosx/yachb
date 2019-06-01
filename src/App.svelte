@@ -17,7 +17,7 @@
     }
 
     const dropped = (e) => {
-        intent.updateEnd(e.explicitOriginalTarget.id)
+        intent.updateEnd(parseInt(e.explicitOriginalTarget.id))
         intent.getGesture()
         dropPiece()
         ready_to_update_board = true
