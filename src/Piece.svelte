@@ -10,6 +10,9 @@
             last.setAttributeNS(null, 'y', last_y)
         }
     }
+    export const lastXy = () => {
+        return {x: parseFloat(last_x), y: parseFloat(last_y)}
+    }
     export const dropPiece = () => {
         last = current
         current = undefined
@@ -39,6 +42,8 @@
     export let url
     export let x
     export let y
+    export let height
+    export let width
 </script>
-<image id={pid} bind:this={image} xlink:href={url} height=40 width=40 
+<image id={pid} bind:this={image} xlink:href={url} height={height} width={width} 
 x={x} y={y} on:mousedown={pick} on:dragstart={stopDrag}/>

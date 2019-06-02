@@ -81,12 +81,12 @@
 <BoardSvg on:drop={dropped}>
 {#each board.rows as r}
     {#each board.columns as c}
-    <rect id={c + r * 8} y={80 + r * 50} x={80 + c * 50} width=50 height=50 fill={((r + c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+    <rect id={c + r * 8} y={`${14 + r * 8.9}%`} x={`${14 + c * 8.9}%`} width="8.9%" height="8.9%" fill={((r + c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
     {/each}
 {/each}
 {#each board_data as piece, i}
     {#if piece !== '-'}
-    <Piece pid={i} url={fileName(piece)} height="40" width="40" x={85 + (i % 8) * 50} y={85 + Math.floor(i / 8) * 50} on:pick={picked}/>
+    <Piece pid={i} url={fileName(piece)} height="7.1%" width="7.1%" x={`${15 + (i % 8) * 8.9}%`} y={`${15 + Math.floor(i / 8) * 8.9}%`} on:pick={picked}/>
     {/if}
 {/each}
 </BoardSvg>
