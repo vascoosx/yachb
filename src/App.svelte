@@ -1,5 +1,6 @@
 <script>
     import Piece, {goBack, dropPiece} from './Piece.svelte'
+    import Square from './Square.svelte'
     import BoardSvg from './BoardSvg.svelte'
     import {Board} from './Board.js'
     import {Intent} from './Intent.js'
@@ -78,15 +79,17 @@
 </script>
 
 <h1>Let's play</h1>
-<BoardSvg on:drop={dropped}>
-{#each board.rows as r}
-    {#each board.columns as c}
-    <rect id={c + r * 8} y={`${14 + r * 8.9}%`} x={`${14 + c * 8.9}%`} width="8.9%" height="8.9%" fill={((r + c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+<div style="width:500px">
+    <BoardSvg on:drop={dropped}>
+    {#each board.rows as r}
+        {#each board.columns as c}
+        <Square sid={c + r * 8} y={`${14 + r * 8.9}%`} x={`${14 + c * 8.9}%`} width="8.9%" height="8.9%" color={((r + c ) % 2 == 1)?'#0077ff':'#b4d1f3'} />
+        {/each}
     {/each}
-{/each}
-{#each board_data as piece, i}
-    {#if piece !== '-'}
-    <Piece pid={i} url={fileName(piece)} height="7.1%" width="7.1%" x={`${15 + (i % 8) * 8.9}%`} y={`${15 + Math.floor(i / 8) * 8.9}%`} on:pick={picked}/>
-    {/if}
-{/each}
-</BoardSvg>
+    {#each board_data as piece, i}
+        {#if piece !== '-'}
+        <Piece pid={i} url={fileName(piece)} height="7.1%" width="7.1%" x={`${15 + (i % 8) * 8.9}%`} y={`${15 + Math.floor(i / 8) * 8.9}%`} on:pick={picked}/>
+        {/if}
+    {/each}
+    </BoardSvg>
+</div>
